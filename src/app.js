@@ -11,12 +11,14 @@ import bodyParser from 'body-parser'
 import session from 'express-session'
 import sessionRouter from  './router/session.router.js'
 
+
 const PORT = 8080;
 const app = express(); 
 
 // traermos información de post como JSON
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
+app.use(express.static( __dirname + '/public'))
 
 //Configurar motor plantillas
 app.engine('handlebars', handlebars.engine());
@@ -38,8 +40,23 @@ app.use(session({
   saveUninitialized: true
 }))
 
-//Carpeta Publica
-app.use(express.static( __dirname + '/public'));
+mongoose.connect(MONGO_URI, 
+  { dbName: "baseCRUD" },  
+  (error) => { 
+      if(error) {
+        console.log('Not Found Connecting');
+      process.exit();
+        }
+      
+        const httpServer = app.listen(PORT, () => console.log('Server Listening...!!!'));
+        const socketServer = new Server(httpServer)
+        httpServer.on("error", (e) => console.log("ERROR: " + e))
+    
+        app.use((req, res, next) => {
+            req.io = socketServer
+            next()
+    })   
+
 
 //Ruta de Vistas
 app.use('/session', sessionRouter);
@@ -49,28 +66,13 @@ app.use('/views_products', viewsProduct );
 
 app.use('/carts', cartsRouter);
 
-app.get('/', (req,res) => { res.send('Conecting')})
 
-//Conexion a BD con Mongo Atlas
+
+
 
 mongoose.set("strictQuery", false);
 
-mongoose.connect(MONGO_URI, 
-  { dbName: "baseCRUD" },  
-  (error) => { 
-      if(error) {
-        console.log('Not Found Connecting');
-      process.exit();
-        }
-      
-        app.listen(PORT, () => console.log('Server Listening...!!!'));
-        const socketServer = new Server(httpServer)
-        httpServer.on("error", (e) => console.log("ERROR: " + e))
-    
-        app.use((req, res, next) => {
-            req.io = socketServer
-            next()
-    })   
+
     
     socketServer.on("connection", socket => {
       console.log("New client connected")
@@ -80,3 +82,4 @@ mongoose.connect(MONGO_URI,
       socketServer.emit("logs", messages)
       })
   })
+})

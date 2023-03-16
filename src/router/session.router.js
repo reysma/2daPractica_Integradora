@@ -15,7 +15,7 @@ router.post('/register', async(req, res) =>{
     res.redirect('/session/login')
 })
 
-//Loguin
+//Login
 router.get('/login', (req, res) =>{
     res.render('session/login')
 })
